@@ -1,0 +1,494 @@
+[
+  {
+    "id": "a5f0c1d2e3b40001",
+    "type": "tab",
+    "label": "Lab 5 cloud dashboard",
+    "disabled": false,
+    "info": "IoT@UCI Lab 5. Device -> HiveMQ Cloud (MQTT over TLS) -> this flow -> Dashboard at http://localhost:1880/dashboard/lab5"
+  },
+  {
+    "id": "a5f0c1d2e3b40010",
+    "type": "ui-base",
+    "name": "IoT@UCI",
+    "path": "/dashboard",
+    "appIcon": "",
+    "includeClientData": true,
+    "acceptsClientConfig": [
+      "ui-notification",
+      "ui-control"
+    ],
+    "showPathInSidebar": false,
+    "headerContent": "page",
+    "navigationStyle": "default",
+    "titleBarStyle": "default",
+    "showReconnectNotification": true,
+    "notificationDisplayTime": 1,
+    "showDisconnectNotification": true,
+    "allowInstall": false
+  },
+  {
+    "id": "a5f0c1d2e3b40011",
+    "type": "ui-theme",
+    "name": "IoT@UCI theme",
+    "colors": {
+      "surface": "#0064a4",
+      "primary": "#0064a4",
+      "bgPage": "#f8fafc",
+      "groupBg": "#ffffff",
+      "groupOutline": "#e2e8f0"
+    },
+    "sizes": {
+      "density": "default",
+      "pagePadding": "12px",
+      "groupGap": "12px",
+      "groupBorderRadius": "6px",
+      "widgetGap": "12px"
+    }
+  },
+  {
+    "id": "a5f0c1d2e3b40012",
+    "type": "ui-page",
+    "name": "Lab 5",
+    "ui": "a5f0c1d2e3b40010",
+    "path": "/lab5",
+    "icon": "cloud",
+    "layout": "grid",
+    "theme": "a5f0c1d2e3b40011",
+    "breakpoints": [
+      {
+        "name": "Default",
+        "px": 0,
+        "cols": 3
+      },
+      {
+        "name": "Tablet",
+        "px": 576,
+        "cols": 6
+      },
+      {
+        "name": "Small Desktop",
+        "px": 768,
+        "cols": 9
+      },
+      {
+        "name": "Desktop",
+        "px": 1024,
+        "cols": 12
+      }
+    ],
+    "order": 1,
+    "className": "",
+    "visible": "true",
+    "disabled": "false"
+  },
+  {
+    "id": "a5f0c1d2e3b40013",
+    "type": "ui-group",
+    "name": "Device T24",
+    "page": "a5f0c1d2e3b40012",
+    "width": 6,
+    "height": 1,
+    "order": 1,
+    "showTitle": true,
+    "className": "",
+    "visible": "true",
+    "disabled": "false",
+    "groupType": "default"
+  },
+  {
+    "id": "a5f0c1d2e3b40014",
+    "type": "ui-group",
+    "name": "History",
+    "page": "a5f0c1d2e3b40012",
+    "width": 6,
+    "height": 1,
+    "order": 2,
+    "showTitle": true,
+    "className": "",
+    "visible": "true",
+    "disabled": "false",
+    "groupType": "default"
+  },
+  {
+    "id": "a5f0c1d2e3b40021",
+    "type": "tls-config",
+    "name": "Verify broker (system CAs)",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "",
+    "keyname": "",
+    "caname": "",
+    "servername": "",
+    "verifyservercert": true,
+    "alpnprotocol": ""
+  },
+  {
+    "id": "a5f0c1d2e3b40020",
+    "type": "mqtt-broker",
+    "name": "EMQX Serverless broker",
+    "broker": "YOUR-EMQX-ADDRESS.ala.us-east-1.emqxsl.com",
+    "port": "8883",
+    "tls": "a5f0c1d2e3b40021",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "autoUnsubscribe": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthRetain": "false",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closeRetain": "false",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willRetain": "false",
+    "willPayload": "",
+    "willMsg": {},
+    "userProps": "",
+    "sessionExpiry": ""
+  },
+  {
+    "id": "a5f0c1d2e3b40101",
+    "type": "comment",
+    "z": "a5f0c1d2e3b40001",
+    "name": "Before you deploy: set EMQX connection and credentials",
+    "info": "1. Topics and dashboard group are already set to T24.\n2. Double-click an MQTT-in node and edit the broker.\n   Connection: Server = your EMQX Address, Port 8883, Use TLS checked.\n   Security: enter the Node-RED EMQX username and password.\n3. Deploy, then open http://localhost:1880/dashboard/lab5",
+    "x": 210,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b40102",
+    "type": "mqtt in",
+    "z": "a5f0c1d2e3b40001",
+    "name": "telemetry",
+    "topic": "iot/T24/telemetry",
+    "qos": "1",
+    "datatype": "json",
+    "broker": "a5f0c1d2e3b40020",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 120,
+    "wires": [
+      [
+        "a5f0c1d2e3b40109",
+        "a5f0c1d2e3b40120"
+      ]
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b40109",
+    "type": "debug",
+    "z": "a5f0c1d2e3b40001",
+    "name": "raw telemetry",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 370,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b4010a",
+    "type": "mqtt in",
+    "z": "a5f0c1d2e3b40001",
+    "name": "status (Last Will)",
+    "topic": "iot/T24/status",
+    "qos": "1",
+    "datatype": "utf8",
+    "broker": "a5f0c1d2e3b40020",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 320,
+    "wires": [
+      [
+        "a5f0c1d2e3b4010b",
+        "a5f0c1d2e3b4010c"
+      ]
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b4010b",
+    "type": "ui-text",
+    "z": "a5f0c1d2e3b40001",
+    "group": "a5f0c1d2e3b40013",
+    "order": 1,
+    "width": 6,
+    "height": 1,
+    "name": "Device status text",
+    "label": "Device status",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "style": false,
+    "font": "",
+    "fontSize": 16,
+    "color": "#717171",
+    "wrapText": false,
+    "className": "",
+    "value": "payload",
+    "valueType": "msg",
+    "x": 400,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b4010c",
+    "type": "function",
+    "z": "a5f0c1d2e3b40001",
+    "name": "offline transition detector",
+    "func": "const current = String(msg.payload).trim().toLowerCase();\nconst previous = context.get('state');\ncontext.set('state', current);\n\n// Fire once only when the retained status changes to offline.\nif (current === 'offline' && previous !== 'offline') {\n    return { payload: 'ALERT: T24 device offline at ' + new Date().toLocaleString() };\n}\nreturn null;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 360,
+    "wires": [
+      [
+        "a5f0c1d2e3b4010d",
+        "a5f0c1d2e3b4010e"
+      ]
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b4010d",
+    "type": "ui-notification",
+    "z": "a5f0c1d2e3b40001",
+    "ui": "a5f0c1d2e3b40010",
+    "position": "top right",
+    "colorDefault": false,
+    "color": "#c62828",
+    "displayTime": "0",
+    "showCountdown": false,
+    "outputs": 1,
+    "allowDismiss": true,
+    "dismissText": "Dismiss",
+    "allowConfirm": false,
+    "confirmText": "Confirm",
+    "raw": false,
+    "className": "",
+    "name": "Offline alert (stays until dismissed)",
+    "x": 680,
+    "y": 340,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b4010e",
+    "type": "debug",
+    "z": "a5f0c1d2e3b40001",
+    "name": "alerts",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b4010f",
+    "type": "comment",
+    "z": "a5f0c1d2e3b40001",
+    "name": "Optional: email alert",
+    "info": "Install node-red-node-email (Menu > Manage palette), add an 'e-mail' output node, and wire it after 'offline detector'. Use an app password, never your UCI password. Not required for the rubric.",
+    "x": 400,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b40120",
+    "type": "function",
+    "z": "a5f0c1d2e3b40001",
+    "name": "telemetry fields for dashboard",
+    "func": "const p = msg.payload || {};\n\nconst temp = { payload: Number(p.temp_c), topic: 'Temperature' };\nconst history = { payload: Number(p.temp_c), topic: 'Temperature' };\nconst pressure = { payload: Number(p.press_hpa), topic: 'Pressure' };\nconst knob = { payload: Number(p.pot_pct), topic: 'Knob' };\n\nreturn [temp, history, pressure, knob];",
+    "outputs": 4,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 410,
+    "y": 180,
+    "wires": [
+      [
+        "a5f0c1d2e3b40121"
+      ],
+      [
+        "a5f0c1d2e3b40122"
+      ],
+      [
+        "a5f0c1d2e3b40123"
+      ],
+      [
+        "a5f0c1d2e3b40124"
+      ]
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b40121",
+    "type": "ui-gauge",
+    "z": "a5f0c1d2e3b40001",
+    "name": "Temperature gauge",
+    "group": "a5f0c1d2e3b40013",
+    "order": 2,
+    "width": 3,
+    "height": 3,
+    "gtype": "gauge-half",
+    "gstyle": "needle",
+    "title": "Temperature",
+    "units": "\u00b0C",
+    "icon": "thermometer",
+    "prefix": "",
+    "suffix": "",
+    "segments": [
+      {
+        "from": "0",
+        "color": "#5bb0d8"
+      },
+      {
+        "from": "20",
+        "color": "#00a65a"
+      },
+      {
+        "from": "30",
+        "color": "#f39c12"
+      }
+    ],
+    "min": "0",
+    "max": "50",
+    "x": 720,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b40122",
+    "type": "ui-chart",
+    "z": "a5f0c1d2e3b40001",
+    "group": "a5f0c1d2e3b40014",
+    "name": "Temperature history",
+    "label": "Temperature history",
+    "order": 1,
+    "chartType": "line",
+    "category": "topic",
+    "categoryType": "msg",
+    "xAxisLabel": "Time",
+    "xAxisProperty": "timestamp",
+    "xAxisPropertyType": "msg",
+    "xAxisType": "time",
+    "yAxisLabel": "\u00b0C",
+    "yAxisProperty": "payload",
+    "yAxisPropertyType": "msg",
+    "action": "append",
+    "pointShape": "circle",
+    "pointRadius": 2,
+    "showLegend": true,
+    "removeOlder": "1",
+    "removeOlderUnit": "3600",
+    "width": 6,
+    "height": 4,
+    "x": 730,
+    "y": 200,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "a5f0c1d2e3b40123",
+    "type": "ui-gauge",
+    "z": "a5f0c1d2e3b40001",
+    "name": "Pressure gauge",
+    "group": "a5f0c1d2e3b40013",
+    "order": 3,
+    "width": 3,
+    "height": 3,
+    "gtype": "gauge-half",
+    "gstyle": "needle",
+    "title": "Pressure",
+    "units": "hPa",
+    "icon": "gauge",
+    "prefix": "",
+    "suffix": "",
+    "segments": [
+      {
+        "from": "950",
+        "color": "#5bb0d8"
+      },
+      {
+        "from": "990",
+        "color": "#00a65a"
+      },
+      {
+        "from": "1030",
+        "color": "#f39c12"
+      }
+    ],
+    "min": "950",
+    "max": "1050",
+    "x": 720,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "a5f0c1d2e3b40124",
+    "type": "ui-gauge",
+    "z": "a5f0c1d2e3b40001",
+    "name": "Knob gauge",
+    "group": "a5f0c1d2e3b40013",
+    "order": 4,
+    "width": 3,
+    "height": 3,
+    "gtype": "gauge-half",
+    "gstyle": "needle",
+    "title": "Knob",
+    "units": "%",
+    "icon": "tune",
+    "prefix": "",
+    "suffix": "",
+    "segments": [
+      {
+        "from": "0",
+        "color": "#5bb0d8"
+      },
+      {
+        "from": "33",
+        "color": "#00a65a"
+      },
+      {
+        "from": "67",
+        "color": "#f39c12"
+      }
+    ],
+    "min": "0",
+    "max": "100",
+    "x": 700,
+    "y": 320,
+    "wires": []
+  }
+]

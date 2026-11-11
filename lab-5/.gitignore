@@ -1,0 +1,16 @@
+# Build output and editor state
+.pio/
+.vscode/
+
+# Secrets never go in Git. Lab 5 keeps credentials in the board's NVS flash,
+# so there should be nothing secret in this folder. These lines are a safety net.
+secrets.h
+include/secrets.h
+*.env
+.env*
+
+# Node-RED: credentials live in flows_cred.json in your Node-RED user folder (~/.node-red).
+# Exported flows (flows.json) do not contain passwords, but never commit these:
+flows_cred.json
+.flows_cred.json.backup
+.config.*.json
