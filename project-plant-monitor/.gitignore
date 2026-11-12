@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+.DS_Store
+*.bin
+*.elf
+flows_cred.json
+credentials.json
+secrets.h
