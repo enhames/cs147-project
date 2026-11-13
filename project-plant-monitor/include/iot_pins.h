@@ -9,7 +9,7 @@ namespace IoTPins {
   constexpr uint8_t BUTTON_1 = 32;          // Alert acknowledge, INPUT_PULLUP
   constexpr uint8_t BUTTON_2 = 33;
   constexpr uint8_t POT_ADC = 34;
-  constexpr uint8_t SOIL_MOISTURE_ADC = 36; // VP, ADC1 input-only; remains usable with Wi-Fi
+  constexpr uint8_t SOIL_MOISTURE_ADC = 35; // VP, ADC1 input-only; remains usable with Wi-Fi
 
   constexpr uint8_t I2C_SDA = 21;
   constexpr uint8_t I2C_SCL = 22;
