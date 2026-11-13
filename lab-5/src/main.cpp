@@ -12,7 +12,7 @@
 // Lab 5: Cloud communication with MQTT over TLS.
 // Complete TODOs 1-6 (search for TODO). The project compiles before you start.
 // Pipeline:
-//   BMP280 + pot --> ESP32 --(Wi-Fi, TLS, MQTT, port 8883)--> HiveMQ Cloud broker
+//   BMP280 + pot --> ESP32 --(Wi-Fi, TLS, MQTT, port 8883)--> EMQX broker
 //                                                               |
 //                          Node-RED on your laptop  <-----------+  (subscribes to iot/<TEAM_ID>/#)
 //                          dashboard + offline alert
@@ -50,7 +50,7 @@ constexpr uint32_t PERIOD_MS = 10000;
 struct Credentials {
   String wifiSsid, wifiPass;   // network
   String mqttHost;             // e.g. abc123.s1.eu.hivemq.cloud (no "mqtts://", no port)
-  String mqttUser, mqttPass;   // HiveMQ Cloud credential (Access Management tab)
+  String mqttUser, mqttPass;   // EMQX credential (Access Management tab)
 };
 Credentials creds;
 
@@ -162,9 +162,13 @@ void configureMqtt() {
   //       (PubSubClient keeps the POINTER, so creds.mqttHost must not change afterwards.)
   //   (c) mqtt.setKeepAlive(MQTT_KEEPALIVE_S); mqtt.setSocketTimeout(5); mqtt.setBufferSize(512);
 
-  // LAB 5 ONLY: This encrypts the TLS traffic but DOES NOT authenticate the broker.
-  // A production device should install the broker CA certificate instead.
+  // !!! WARNING: LAB 5 ONLY, NOT SECURE !!!
+  // setInsecure() means the TLS connection is ENCRYPTED, but we are NOT VERIFYING
+  // that the server really is our EMQX broker. Anyone running a fake hotspot could
+  // pretend to be the broker and collect our MQTT username and password.
+  // Lab 6 fixes this by checking the broker's CA certificate.
   net.setInsecure();
+
   mqtt.setServer(creds.mqttHost.c_str(), MQTT_PORT);  // EMQX TLS endpoint on port 8883.
   mqtt.setKeepAlive(MQTT_KEEPALIVE_S);               // Broker can detect a dead client after keepalive timeout.
   mqtt.setSocketTimeout(5);
