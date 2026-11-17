@@ -1,0 +1,6 @@
+.pio/
+.vscode/
+# Never commit credentials. This lab keeps them in NVS, so there should be nothing to ignore here,
+# but if you make a local notes file for them, name it secrets*.txt and it stays out of Git.
+secrets*.txt
+*.local
