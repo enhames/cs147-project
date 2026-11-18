@@ -6,6 +6,7 @@ namespace PlantConfig {
   constexpr char DEVICE_ID[] = "plant-monitor-01";
 
   constexpr uint32_t SOIL_SAMPLE_MS = 5000;
+  constexpr uint32_t LIGHT_SAMPLE_MS = 5000; // BH1750 updates in about 120 ms; five seconds is ample for plant trends.
   constexpr uint32_t DISPLAY_UPDATE_MS = 1000;
   constexpr uint32_t TELEMETRY_PERIOD_MS = 60000;
   constexpr uint32_t WIFI_RETRY_MS = 10000;

@@ -15,11 +15,11 @@ inline void iotStartSerial(const char* activityName) {
 }
 
 inline void iotInitI2C() {
-  Wire.begin(IoTPins::I2C_SDA, IoTPins::I2C_SCL);
+  Wire.begin(IoTPins::I2C_SDA, IoTPins::I2C_SCL);  // Start the shared 100 kHz I2C bus used by BMP280 and BH1750.
 }
 
 inline void iotInitSPI() {
-  SPI.begin(IoTPins::SPI_SCK, IoTPins::SPI_MISO, IoTPins::SPI_MOSI);
+  SPI.begin(IoTPins::SPI_SCK, IoTPins::SPI_MISO, IoTPins::SPI_MOSI);  // Start the separate SPI bus used by the OLED.
 }
 
 inline void iotPrintDeviceId() {
@@ -41,7 +41,7 @@ inline void iotI2CScan() {
   Serial.println("Scanning I2C bus...");
   int count = 0;
   for (uint8_t addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
+      Wire.beginTransmission(addr);  // Address-only probe asks each possible I2C device for an ACK.
     if (Wire.endTransmission() == 0) {
       Serial.print("Found I2C device at 0x");
       if (addr < 16) Serial.print("0");

@@ -12,3 +12,9 @@
 - [ ] Confirm MQTT resumes after Wi-Fi returns.
 - [ ] Confirm retained status changes to offline after an unclean disconnect.
 - [ ] Confirm dashboard receives real sensor data, not an Inject-node test value.
+
+- [ ] Connect BH1750 VCC/GND/SDA/SCL to 3V3/GND/GPIO21/GPIO22.
+- [ ] Connect ADDR to GND for 0x23, or verify automatic detection at 0x5C.
+- [ ] Confirm startup prints `BH1750 OK at 0x23` or `0x5C`.
+- [ ] Cover the BH1750 and confirm lux decreases; add light and confirm lux increases.
+- [ ] Confirm dashboard gauge, history chart and CSV log contain real lux values.

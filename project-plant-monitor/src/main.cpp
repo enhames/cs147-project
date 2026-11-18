@@ -12,6 +12,7 @@
 #include "iot_provision.h"
 #include "plant_config.h"
 #include "moisture_sensor.h"
+#include "bh1750_sensor.h"  // Register-level BH1750 driver shares GPIO21/GPIO22 with the BMP280.
 
 // HARDWARE-READY, PENDING CALIBRATION AND PHYSICAL VALIDATION.
 // Use SETDRY and SETWET after measuring the installed sensor in the real pot.
@@ -29,6 +30,9 @@ Credentials creds;
 WiFiClientSecure net;
 PubSubClient mqtt(net);
 Adafruit_BMP280 bmp;
+LightReading light;  // Latest valid or invalid BH1750 sample used by OLED, Serial, and MQTT.
+bool bh1750Ok = false;  // Tracks whether either legal BH1750 I2C address acknowledged startup.
+uint8_t bh1750Address = 0;  // Stores 0x23 or 0x5C after automatic address detection.
 
 String clientId;
 String topicTelemetry = String("iot/") + PlantConfig::TEAM_ID + "/plant/telemetry";
@@ -52,6 +56,7 @@ uint32_t mqttReconnects = 0;
 uint32_t publishOk = 0;
 uint32_t publishFail = 0;
 uint32_t lastSoilSampleMs = 0;
+uint32_t lastLightSampleMs = 0;  // Nonblocking timestamp for periodic ambient-light reads.
 uint32_t lastDisplayMs = 0;
 uint32_t lastTelemetryMs = 0;
 uint32_t lastWifiTryMs = 0;
@@ -142,6 +147,22 @@ void saveCalibration() {
   prefs.end();
 }
 
+void updateLightReading() {
+  if (!bh1750Ok) return;  // Keep all existing plant-monitor features running when the optional light sensor is absent.
+
+  LightReading candidate = bh1750Read(bh1750Address);  // Request the newest continuously updated measurement.
+  if (!candidate.valid) {
+    Serial.println("BH1750 read failed; keeping the last valid light value.");
+    return;
+  }
+
+  light = candidate;
+  Serial.print("Light raw=");
+  Serial.print(light.raw);
+  Serial.print(" lux=");
+  Serial.println(light.lux, 1);
+}
+
 void configureMqtt() {
   // Lab 5 course pattern: traffic is encrypted, but setInsecure() does not verify broker identity.
   // Replace this with a CA certificate before claiming production-grade server authentication.
@@ -223,7 +244,7 @@ void publishAlert(const String& eventName) {
   if (!mqtt.connected()) return;
   char payload[240];
   snprintf(payload, sizeof payload,
-           "{\"team\":\"%s\",\"device_id\":\"%s\",\"event\":\"%s\",\"moisture_raw\":%d,\"moisture_pct\":%.1f,\"uptime_s\":%lu}",
+           "{\"team\":\"%s\",\"device_id\":\"%s\",\"event\":\"%s\",\"moisture_raw\":%d,\"moisture_pct\":%.1f,\"light_lux\":%.1f,\"uptime_s\":%lu}",
            PlantConfig::TEAM_ID,
            PlantConfig::DEVICE_ID,
            eventName.c_str(),
@@ -280,9 +301,11 @@ bool publishTelemetry() {
   char moisturePct[16] = "null";
   if (!isnan(moisture.percent)) snprintf(moisturePct, sizeof moisturePct, "%.1f", moisture.percent);
 
-  char payload[640];
+  char lightLux[16] = "null";  // JSON null distinguishes a missing BH1750 from a real 0 lx reading.
+  if (light.valid) snprintf(lightLux, sizeof lightLux, "%.1f", light.lux);
+  char payload[768];  // Extra room is reserved for the added BH1750 fields.
   snprintf(payload, sizeof payload,
-           "{\"team\":\"%s\",\"device_id\":\"%s\",\"boot_count\":%lu,\"seq\":%lu,\"uptime_s\":%lu,\"moisture_raw\":%d,\"moisture_pct\":%s,\"soil_status\":\"%s\",\"temp_c\":%s,\"rssi\":%d,\"wifi_reconnects\":%lu,\"mqtt_reconnects\":%lu,\"reset_reason\":\"%s\",\"raw_dry\":%d,\"raw_wet\":%d}",
+           "{\"team\":\"%s\",\"device_id\":\"%s\",\"boot_count\":%lu,\"seq\":%lu,\"uptime_s\":%lu,\"moisture_raw\":%d,\"moisture_pct\":%s,\"soil_status\":\"%s\",\"temp_c\":%s,\"light_raw\":%u,\"light_lux\":%s,\"light_sensor_ok\":%s,\"rssi\":%d,\"wifi_reconnects\":%lu,\"mqtt_reconnects\":%lu,\"reset_reason\":\"%s\",\"raw_dry\":%d,\"raw_wet\":%d}",
            PlantConfig::TEAM_ID,
            PlantConfig::DEVICE_ID,
            (unsigned long)bootCount,
@@ -307,7 +330,8 @@ bool publishTelemetry() {
 
 void updateDisplay() {
   String line1 = "Plant T24 " + soilStatus;
-  String line2 = "Raw " + String(moisture.raw);
+  String line2 = "Soil " + String(moisture.raw) +
+                 " Lx " + (light.valid ? String(light.lux, 0) : String("--"));  // Fit both sensors on one 128-pixel OLED line.
   String line3 = isnan(moisture.percent)
       ? "Moisture: CALIBRATE"
       : "Moisture: " + String(moisture.percent, 1) + "%";
@@ -340,6 +364,14 @@ void printStatus() {
   Serial.print("Boot/seq/uptime: "); Serial.print(bootCount); Serial.print("/");
   Serial.print(sequenceNumber); Serial.print("/"); Serial.println(millis() / 1000);
   Serial.print("Reconnects WiFi/MQTT: "); Serial.print(wifiReconnects); Serial.print("/"); Serial.println(mqttReconnects);
+  Serial.print("BH1750: "); Serial.print(bh1750Ok ? "detected at 0x" : "not detected");
+  if (bh1750Ok) {
+    Serial.print(bh1750Address, HEX);
+    Serial.print("  lux: ");
+    if (light.valid) Serial.println(light.lux, 1); else Serial.println("no valid sample");
+  } else {
+    Serial.println();
+  }
 }
 
 bool parseRawCommand(const String& line, const char* prefix, int& value) {
@@ -443,6 +475,7 @@ void setup() {
   loadPlantSettings();
   resetReasonText = resetReasonName(esp_reset_reason());
   bmpOk = bmp.begin(IoTPins::BMP280_ADDR);
+  bh1750Ok = bh1750Begin(bh1750Address);  // Probe 0x23 then 0x5C and send continuous H-resolution command 0x10.
 
   uint64_t chip = ESP.getEfuseMac();
   char id[40];
@@ -454,8 +487,16 @@ void setup() {
   Serial.print("Boot count: "); Serial.println(bootCount);
   Serial.print("Reset reason: "); Serial.println(resetReasonText);
   Serial.println(bmpOk ? "BMP280 OK" : "BMP280 not found; temperature will be null");
+  if (bh1750Ok) {
+    Serial.print("BH1750 OK at 0x");
+    Serial.println(bh1750Address, HEX);
+  } else {
+    Serial.println("BH1750 not found at 0x23 or 0x5C; light values will be null");
+  }
 
   updateSoilState();
+  delay(200);  // First H-resolution result can require up to 180 ms according to the datasheet.
+  updateLightReading();
   updateDisplay();
 
   if (!loadCredentials()) {
@@ -481,6 +522,10 @@ void loop() {
   if (now - lastSoilSampleMs >= PlantConfig::SOIL_SAMPLE_MS) {
     lastSoilSampleMs = now;
     updateSoilState();
+  }
+  if (now - lastLightSampleMs >= PlantConfig::LIGHT_SAMPLE_MS) {
+    lastLightSampleMs = now;
+    updateLightReading();
   }
   if (now - lastDisplayMs >= PlantConfig::DISPLAY_UPDATE_MS) {
     lastDisplayMs = now;

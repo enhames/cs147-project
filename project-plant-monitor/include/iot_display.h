@@ -9,7 +9,7 @@ constexpr int IOT_SCREEN_WIDTH = 128;
 constexpr int IOT_SCREEN_HEIGHT = 64;
 
 inline Adafruit_SSD1306& iotDisplay() {
-  static Adafruit_SSD1306 display(
+  static Adafruit_SSD1306 display(  // One shared display object avoids duplicate OLED frame buffers.  // One shared display object avoids duplicate OLED frame buffers.
       IOT_SCREEN_WIDTH,
       IOT_SCREEN_HEIGHT,
       &SPI,
@@ -21,7 +21,7 @@ inline Adafruit_SSD1306& iotDisplay() {
 
 inline bool iotInitDisplay() {
   auto& display = iotDisplay();
-  if (!display.begin(SSD1306_SWITCHCAPVCC)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC)) {  // Enable the OLED charge pump used by this SPI module.  // Enable the OLED charge pump used by this SPI module.
     Serial.println("OLED init failed. Check SPI wiring and pin map.");
     return false;
   }

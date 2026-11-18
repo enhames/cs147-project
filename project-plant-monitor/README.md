@@ -8,7 +8,7 @@ This project monitors one potted plant with a Capacitive Soil Moisture Sensor v1
 
 - ESP32 DevKit V1 (`esp32dev`)
 - Capacitive Soil Moisture Sensor v1.2, analog output
-- Course-kit BMP280, SPI OLED, LEDs, buzzer and Button 1
+- Course-kit BMP280, BH1750FVI ambient-light sensor, SPI OLED, LEDs, buzzer and Button 1
 - Stable USB wall power for unattended operation
 
 ## Soil sensor wiring
@@ -105,3 +105,18 @@ Demonstrate a real `moisture_raw` value moving through:
 - Node-RED dashboard and CSV logging
 - Measured current
 - 72-hour unattended run
+
+
+### BH1750FVI ambient-light sensor
+
+The BH1750 shares the existing I2C bus with the BMP280. The firmware probes both legal addresses and uses the one that acknowledges.
+
+| BH1750 breakout | ESP32 |
+|---|---|
+| VCC | 3V3 |
+| GND | GND |
+| SDA | GPIO21 |
+| SCL | GPIO22 |
+| ADDR | GND for `0x23` (recommended), or 3V3 for `0x5C` |
+
+The firmware sends `0x10` for continuous high-resolution mode, waits for the first conversion, reads high byte then low byte, and converts the count with `lux = raw / 1.2`. MQTT, the dashboard, and CSV logging include `light_raw`, `light_lux`, and `light_sensor_ok`.

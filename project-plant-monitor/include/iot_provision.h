@@ -45,7 +45,7 @@ inline String iotMasked(const String& secret) {
 //   "mqtts://abc123.s1.eu.hivemq.cloud:8883"  ->  "abc123.s1.eu.hivemq.cloud"
 inline String iotCleanHost(String h) {
   h.trim();
-  if (h.startsWith("mqtts://")) h = h.substring(8);
+  if (h.startsWith("mqtts://")) h = h.substring(8);  // PubSubClient needs a hostname, not a URI scheme.  // PubSubClient needs a hostname, not a URI scheme.
   if (h.startsWith("ssl://"))   h = h.substring(6);
   int colon = h.indexOf(':');
   if (colon >= 0) h = h.substring(0, colon);

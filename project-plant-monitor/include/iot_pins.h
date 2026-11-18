@@ -16,6 +16,9 @@ namespace IoTPins {
   constexpr uint8_t BMP280_ADDR = 0x76;
   constexpr uint8_t MPU6050_ADDR = 0x68;
   constexpr uint8_t ATECC608A_ADDR = 0x60;
+  constexpr uint8_t BH1750_ADDR_LOW = 0x23;   // ADDR tied low/GND selects binary 0100011.
+  constexpr uint8_t BH1750_ADDR_HIGH = 0x5C;  // ADDR tied high selects binary 1011100.
+  constexpr uint8_t BH1750_CONTINUOUS_HIGH_RES_MODE = 0x10; // Continuous 1 lx mode, typically 120 ms.
 
   constexpr uint8_t SPI_SCK = 18;
   constexpr uint8_t SPI_MISO = 19;

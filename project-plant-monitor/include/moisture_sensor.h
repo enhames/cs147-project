@@ -24,16 +24,16 @@ inline void sortSamples(int* values, uint8_t count) {
 inline int readSoilMedian() {
   int samples[PlantConfig::ADC_SAMPLES];
   for (uint8_t i = 0; i < PlantConfig::ADC_SAMPLES; ++i) {
-    samples[i] = analogRead(IoTPins::SOIL_MOISTURE_ADC);
+    samples[i] = analogRead(IoTPins::SOIL_MOISTURE_ADC);  // ADC1 remains available while ESP32 Wi-Fi is active.  // ADC1 remains available while ESP32 Wi-Fi is active.
   }
-  sortSamples(samples, PlantConfig::ADC_SAMPLES);
+  sortSamples(samples, PlantConfig::ADC_SAMPLES);  // Sorting enables a median filter that rejects isolated ADC spikes.  // Sorting enables a median filter that rejects isolated ADC spikes.
   return samples[PlantConfig::ADC_SAMPLES / 2];
 }
 
 inline MoistureReading readMoisture(int rawDry, int rawWet) {
   MoistureReading result;
   result.raw = readSoilMedian();
-  result.calibrated = abs(rawWet - rawDry) >= PlantConfig::MIN_CALIBRATION_SPAN;
+  result.calibrated = abs(rawWet - rawDry) >= PlantConfig::MIN_CALIBRATION_SPAN;  // Reject endpoints too close to map reliably.  // Reject endpoints too close to map reliably.
   if (!result.calibrated) return result;
 
   // This formula works whether the wet reference is numerically higher or lower.
