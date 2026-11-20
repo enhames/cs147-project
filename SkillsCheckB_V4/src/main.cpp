@@ -190,7 +190,7 @@ void onMessage(char* topic, byte* payload, unsigned int len) {
 }
 
 void configureMqtt() {
-  net.setCACert(ISRG_ROOT_X1_PEM);   // verify the broker certificate (ISRG Root X1)
+  net.setCACert(EMQX_ROOT_CA_PEM);   // verify the broker certificate (ISRG Root X1)
   mqtt.setServer(creds.mqttHost.c_str(), MQTT_PORT);
   mqtt.setKeepAlive(MQTT_KEEPALIVE_S);
   mqtt.setSocketTimeout(5);
