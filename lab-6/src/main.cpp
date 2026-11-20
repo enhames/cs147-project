@@ -137,7 +137,7 @@ void runProvisioning() {
   } while (creds.wifiSsid.length() == 0);
   creds.wifiPass = iotAsk("Wi-Fi password (leave empty for an open network):");
   do {
-    creds.mqttHost = iotCleanHost(iotAsk("MQTT host (HiveMQ Cluster URL, e.g. abc123.s1.eu.hivemq.cloud):"));
+    creds.mqttHost = iotCleanHost(iotAsk("MQTT host (EMQX deployment Address, without mqtts:// or :8883):"));
   } while (creds.mqttHost.length() == 0);
   do {
     creds.mqttUser = iotAsk("MQTT username:");
@@ -163,11 +163,11 @@ void configureMqtt() {
   //         and print which CA you are using.
   // From Lab 5: encrypted but the broker is NOT verified. Replace this line.
   if (useWrongCa) {
-    Serial.println("TLS: using WRONG CA (DigiCert Global Root G2); connection should fail");
-    net.setCACert(WRONG_CA_PEM);  // Trust the intentionally unrelated root so the TLS handshake proves verification can reject the broker.
+    Serial.println("TLS: using WRONG CA (ISRG Root X1); connection should fail");
+    net.setCACert(WRONG_CA_PEM);  // Trust an unrelated root only to prove certificate verification rejects the EMQX broker.
   } else {
-    Serial.println("TLS: using ISRG Root X1");
-    net.setCACert(ISRG_ROOT_X1_PEM);  // Trust ISRG Root X1 so TLS can authenticate the intended HiveMQ/Let's Encrypt certificate chain.
+    Serial.println("TLS: using DigiCert Global Root G2 for EMQX Serverless");
+    net.setCACert(EMQX_ROOT_CA_PEM);  // Authenticate the EMQX certificate chain and the configured broker hostname.
   }
 
   mqtt.setServer(creds.mqttHost.c_str(), MQTT_PORT);   // PubSubClient keeps this host pointer and connects to MQTT-over-TLS port 8883.
@@ -395,7 +395,7 @@ void printStatus() {
   printCredentials();
   Serial.print("  Wi-Fi: "); Serial.println(WiFi.status() == WL_CONNECTED ? "connected" : "down");
   Serial.print("  MQTT : "); Serial.println(mqttStateText(mqtt.state()));
-  Serial.print("  TLS CA: "); Serial.println(useWrongCa ? "WRONG CA (demo)" : "ISRG Root X1");
+  Serial.print("  TLS CA: "); Serial.println(useWrongCa ? "WRONG CA (ISRG Root X1 demo)" : "DigiCert Global Root G2");
   Serial.print("  signing: "); Serial.println(eccSigning ? "ATECC608A slot 0" : "off");
   Serial.print("  published ok/failed: "); Serial.print(pubOk); Serial.print("/"); Serial.print(pubFail);
   Serial.print("  signed ok/failed: "); Serial.print(sigOk); Serial.print("/"); Serial.println(sigFail);
