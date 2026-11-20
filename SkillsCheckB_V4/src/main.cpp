@@ -25,7 +25,7 @@
 // This device has ONE defect. Find it, fix it, and keep the device working.
 
 // ---------------- Team settings (not secret) ----------------
-#define TEAM_ID "T00"   // your team number from Canvas, e.g. "T07"
+#define TEAM_ID "T24"   // your team number from Canvas, e.g. "T07"
 
 constexpr uint16_t MQTT_PORT        = 8883;    // MQTT over TLS
 constexpr uint16_t MQTT_KEEPALIVE_S = 15;
