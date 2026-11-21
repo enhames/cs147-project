@@ -1,0 +1,5 @@
+Device public key (P-256, X|Y, slot 0):
+4a8488e2e9cb6276b6d2916cbe931ed9eaa1d3d3a9cd360c01eb36f2df635ea5f67044a2d180ce53c85e12bbefb279e6459b875d871618b09cd3b424e8852153
+
+PUB iot/T24/telemetry  {"seq":1,"temp_c":23.31,"press_hpa":1013.29,"pot_pct":27,"rssi":-52,"uptime_s":10}
+SIG da2143920f461eefdb2fb7df198ff4b7cbd13cd10b3049ab6f0a1dbd3228fb306105f5e8b46640e4eb7dedbce029a06142c6f5be08cd20aa0c56621564e9b373

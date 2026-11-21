@@ -10,7 +10,7 @@
 
 // IoT@UCI Skills Check B: light-level node.
 // Reads a BH1750 ambient light sensor over I2C (Wire only), publishes lux to your team's
-// EMQX Serverless deployment over MQTT/TLS, and moves the servo when it receives a command.
+// HiveMQ Cloud cluster over MQTT/TLS, and moves the servo when it receives a command.
 // It reuses the credentials your board already has in NVS from Labs 5 and 6.
 //
 // Wiring (you do this): BH1750 / GY-302 board -> kit. Use its datasheet and the board labels.
@@ -37,7 +37,7 @@ constexpr uint32_t PERIOD_MS        = 5000;
 // ---------------- BH1750 (see its datasheet) ----------------
 constexpr uint8_t BH1750_ADDR      = 0x23;     // ADDR pin low or floating
 constexpr uint8_t BH1750_POWER_ON  = 0x01;
-constexpr uint8_t BH1750_MODE      = 0x13;     // Continuously H-Resolution Mode (1 lx, 120 ms)
+constexpr uint8_t BH1750_MODE      = 0x10;     // Continuously H-Resolution Mode (1 lx, 120 ms), should be value 0x10 in H-resolution (page 5 of BH1750FVI datasheet). Original code has value 0x13 which is Continously L-Resolution Mode.
 
 // ---------------- Servo (LEDC PWM, 50 Hz) ----------------
 constexpr uint8_t  SERVO_CH     = 0;
@@ -50,7 +50,6 @@ struct Credentials {
   String wifiSsid, wifiPass;
   String mqttHost;
   String mqttUser, mqttPass;
-  String commandToken;  // Application-level authorization secret, provisioned into NVS rather than source.
 };
 Credentials creds;
 
@@ -69,6 +68,8 @@ bool  bhOk = false;
 float lastLux = -1;
 int   servoAngle = 90;
 
+bool useWrongCa = false;       // "CA WRONG" demo: verification must make the handshake fail
+
 uint32_t backoffMs   = BACKOFF_START_MS;
 uint32_t lastMqttTry = 0;
 uint32_t seqNo = 0, pubOk = 0, pubFail = 0, cmdCount = 0;
@@ -78,9 +79,9 @@ uint32_t seqNo = 0, pubOk = 0, pubFail = 0, cmdCount = 0;
 // ============================================================================================
 
 bool bhWrite(uint8_t opcode) {
-  Wire.beginTransmission(BH1750_ADDR);  // Start an I2C write transaction to the BH1750 address.
-  Wire.write(opcode);  // Send one BH1750 command byte, such as power-on or measurement mode.
-  return Wire.endTransmission() == 0;  // I2C status 0 means the sensor acknowledged the command.
+  Wire.beginTransmission(BH1750_ADDR);
+  Wire.write(opcode);
+  return Wire.endTransmission() == 0;
 }
 
 bool bhBegin() {
@@ -92,7 +93,7 @@ bool bhBegin() {
 
 // Returns lux, or -1 if the sensor did not answer.
 float bhReadLux() {
-  if (Wire.requestFrom(BH1750_ADDR, (uint8_t)2) != 2) return -1;  // A complete light result requires two I2C bytes.
+  if (Wire.requestFrom(BH1750_ADDR, (uint8_t)2) != 2) return -1;
   uint16_t raw = ((uint16_t)Wire.read() << 8) | Wire.read();
   return raw;          // count is lux
 }
@@ -105,7 +106,7 @@ void servoWrite(int angle) {
   servoAngle = angle;
   const uint32_t us = SERVO_MIN_US + (uint32_t)(SERVO_MAX_US - SERVO_MIN_US) * angle / 180;
   const uint32_t duty = (uint32_t)((uint64_t)us * ((1UL << SERVO_BITS) - 1) * SERVO_HZ / 1000000UL);
-  ledcWrite(SERVO_CH, duty);  // Update the ESP32 PWM duty cycle that controls the servo pulse width.
+  ledcWrite(SERVO_CH, duty);
 }
 
 // ============================================================================================
@@ -113,7 +114,7 @@ void servoWrite(int angle) {
 // ============================================================================================
 
 bool loadCredentials() {
-  prefs.begin(NVS_NAMESPACE, true);  // Open NVS read-only so startup cannot accidentally overwrite credentials.
+  prefs.begin(NVS_NAMESPACE, true);
   creds.wifiSsid = prefs.getString("wifi_ssid", "");
   creds.wifiPass = prefs.getString("wifi_pass", "");
   creds.mqttHost = prefs.getString("mqtt_host", "");
@@ -126,13 +127,12 @@ bool loadCredentials() {
 }
 
 void saveCredentials() {
-  prefs.begin(NVS_NAMESPACE, false);  // Open NVS read-write while provisioning new values.
+  prefs.begin(NVS_NAMESPACE, false);
   prefs.putString("wifi_ssid", creds.wifiSsid);
   prefs.putString("wifi_pass", creds.wifiPass);
   prefs.putString("mqtt_host", creds.mqttHost);
   prefs.putString("mqtt_user", creds.mqttUser);
   prefs.putString("mqtt_pass", creds.mqttPass);
-  prefs.putString("cmd_token", creds.commandToken);  // Save the token beside the other provisioned secrets.
   prefs.end();
 }
 
@@ -150,7 +150,6 @@ void printCredentials() {
   Serial.print("  MQTT host     : "); Serial.println(creds.mqttHost);
   Serial.print("  MQTT username : "); Serial.println(creds.mqttUser);
   Serial.print("  MQTT password : "); Serial.println(iotMasked(creds.mqttPass));
-  Serial.print("  Command token : "); Serial.println(iotMasked(creds.commandToken));  // Never print the secret itself.
 }
 
 void runProvisioning() {
@@ -159,13 +158,10 @@ void runProvisioning() {
   do { creds.wifiSsid = iotAsk("Wi-Fi SSID:"); } while (creds.wifiSsid.length() == 0);
   creds.wifiPass = iotAsk("Wi-Fi password (leave empty for an open network):");
   do {
-    creds.mqttHost = iotCleanHost(iotAsk("MQTT host (EMQX deployment address, without mqtts:// or :8883):"));
+    creds.mqttHost = iotCleanHost(iotAsk("MQTT host (HiveMQ Cluster URL):"));
   } while (creds.mqttHost.length() == 0);
   do { creds.mqttUser = iotAsk("MQTT username:"); } while (creds.mqttUser.length() == 0);
   creds.mqttPass = iotAsk("MQTT password:");
-  do {
-    creds.commandToken = iotAsk("Command token (at least 8 characters; do not commit it):");
-  } while (creds.commandToken.length() < 8);
   saveCredentials();
   Serial.println("Saved to NVS:");
   printCredentials();
@@ -175,74 +171,33 @@ void runProvisioning() {
 // MQTT over TLS
 // ============================================================================================
 
-/*
- * SECURITY FIX: APPLICATION-LEVEL COMMAND AUTHORIZATION
- *
- * Defect: the starter accepted servo:<angle> from any MQTT client that could
- * publish to the Team 24 command topic. TLS protected the connection, but TLS
- * did not prove that this particular command was sent by an authorized operator.
- *
- * Repair: every command must now be formatted as:
- *
- *   auth:<command-token>;servo:<angle>
- *
- * The command token is entered over Serial and stored in NVS. It is not placed
- * in source code. The callback checks the exact topic and token before moving
- * the servo. EMQX topic authorization should also restrict who may publish to
- * iot/T24/cmd. This classroom repair demonstrates authorization; a production
- * actuator should use signed commands plus a nonce/sequence number to stop replay.
- */
 void onMessage(char* topic, byte* payload, unsigned int len) {
   String msg;
-  for (unsigned int i = 0; i < len && i < 128; i++) msg += (char)payload[i];  // Bound the MQTT payload copied into RAM.
+  for (unsigned int i = 0; i < len && i < 64; i++) msg += (char)payload[i];
   msg.trim();
   Serial.print("CMD ");
   Serial.print(topic);
   Serial.print("  ");
-  Serial.println("[payload received]");  // Do not echo the command token to Serial logs.
-
-  if (TOPIC_CMD != topic) {
-    Serial.println("CMD rejected: unexpected topic");
-    return;
-  }
-
-  const String prefix = String("auth:") + creds.commandToken + ";";
-  if (!msg.startsWith(prefix)) {
-    Serial.println("CMD rejected: command authorization failed");
-    return;
-  }
-
-  const String command = msg.substring(prefix.length());
-  if (!command.startsWith("servo:")) {
-    Serial.println("CMD rejected: unknown command");
-    return;
-  }
-
-  const String arg = command.substring(6);
+  Serial.println(msg);
+  if (TOPIC_CMD != topic) return;                      // only our own command topic
+  if (!msg.startsWith("servo:")) { Serial.println("CMD rejected: unknown command"); return; }
+  const String arg = msg.substring(6);
   for (size_t i = 0; i < arg.length(); i++) {
-    if (!isDigit(arg[i])) {
-      Serial.println("CMD rejected: angle is not a number");
-      return;
-    }
+    if (!isDigit(arg[i])) { Serial.println("CMD rejected: angle is not a number"); return; }
   }
-
   const int angle = arg.toInt();
-  if (arg.length() == 0 || angle < 0 || angle > 180) {
-    Serial.println("CMD rejected: angle out of 0..180");
-    return;
-  }
-
+  if (arg.length() == 0 || angle < 0 || angle > 180) { Serial.println("CMD rejected: angle out of 0..180"); return; }
   servoWrite(angle);
   cmdCount++;
-  Serial.println("CMD accepted: authenticated servo command");
 }
 
 void configureMqtt() {
-  net.setCACert(DIGICERT_GLOBAL_ROOT_G2_PEM);   // Verify the EMQX broker certificate chain and hostname.
-  mqtt.setServer(creds.mqttHost.c_str(), MQTT_PORT);  // Configure the remote MQTT-over-TLS endpoint on port 8883.
-  mqtt.setKeepAlive(MQTT_KEEPALIVE_S);  // Keepalive packets let the broker detect a dead client connection.
+  
+  net.setCACert(EMQX_ROOT_CA_PEM);   // verify the broker certificate (ISRG Root X1)
+  mqtt.setServer(creds.mqttHost.c_str(), MQTT_PORT);
+  mqtt.setKeepAlive(MQTT_KEEPALIVE_S);
   mqtt.setSocketTimeout(5);
-  mqtt.setCallback(onMessage);  // PubSubClient calls onMessage() when a subscribed MQTT PUBLISH arrives.
+  mqtt.setCallback(onMessage);
 }
 
 bool mqttConnect() {
@@ -258,8 +213,8 @@ bool mqttConnect() {
     if (code != 0) { Serial.print("TLS error "); Serial.print(code); Serial.print(": "); Serial.println(err); }
     return false;
   }
-  mqtt.publish(TOPIC_STATUS.c_str(), "online", true);  // Retained status is delivered immediately to later subscribers.
-  mqtt.subscribe(TOPIC_CMD.c_str(), 1);  // Subscribe only to Team 24 commands; QoS 1 may redeliver duplicates.
+  mqtt.publish(TOPIC_STATUS.c_str(), "online", true);
+  mqtt.subscribe(TOPIC_CMD.c_str(), 1);
   return true;
 }
 
@@ -392,7 +347,7 @@ void loop() {
   pollConsole();
   maintainWiFi();
   maintainMqtt();
-  mqtt.loop();  // Process incoming MQTT packets and maintain keepalive traffic.
+  mqtt.loop();
 
   static uint32_t lastPub = 0;
   if (iotEvery(PERIOD_MS, lastPub)) {
